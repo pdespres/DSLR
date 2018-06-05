@@ -10,12 +10,15 @@ Supported options:
 
 #TODO
 #rajouts bonus khi2?
+#rolling mean, variance or standard deviation?
+#correlation?
 
 import sys
 import csv
 import os.path
 
 def load_file(csvfile):
+	#open file / create headers(column name) and data arrays
 	if not os.path.isfile(csvfile):
 		exit_error('can\'t find the file ' + csvfile)
 	data = []
@@ -31,6 +34,7 @@ def load_file(csvfile):
 	return headers, data
 
 def is_number(value):
+	#surprisingly hard to do in python
 	try:
 		float(value)
 		return True
@@ -70,6 +74,7 @@ def calculate_stats(headers, data):
 			continue
 		array.sort()
 
+		# calculate stats
 		result = {}
 		result[''] = column
 		result['Count'] = count
@@ -101,6 +106,7 @@ def calculate_stats(headers, data):
 	return results
 
 def print_results(results, stats):
+	# printing with dynamic padding
 	for y in stats:
 		line = y.ljust(7)
 		for x in results:
