@@ -1,13 +1,19 @@
 #!/usr/bin/env python 3.6
 # waloo le encoding: utf-8 de malade
 
+"""
+\033[32musage:	python histogram.py [-x] [dataset]
+
+Supported options:
+	-x 		xkcd		xkcd style\033[0m
+"""
+
 #TODO
 
 import sys
 import csv
 import os.path
-
-csvfile = './data/dataset_train.csv'
+import matplotlib.pyplot as plt
 
 def load_file(csvfile):
 	#open file / create headers(column name) and data arrays
@@ -39,7 +45,7 @@ def all_numeric(data, index):
 			return False
 	return True
 
-def prepare_data(headers, data):
+def print_histos(headers, data):
 	# looking for index of school column
 	for index, lib in enumerate(headers):
 		if lib == 'Hogwarts House':
@@ -48,8 +54,8 @@ def prepare_data(headers, data):
 	# looking for diffenrent values of school	
 	array = []
 	for row in data:
-	    if row[school_col] != '':
-	        array.append(row[school_col])
+		if row[school_col] != '':
+			array.append(row[school_col])
 	uniquearray = list(sorted(set(array)))
 	school = [x for x in set(uniquearray)]
 	school.sort()
@@ -58,27 +64,64 @@ def prepare_data(headers, data):
 	index = -1
 	results = []
 	for i, lib in enumerate(school):
-	    results.append([])
+		results.append([])
 
+	cpt = 0
+	if params.xkcd:
+		plt.xkcd()
+	plt.figure(figsize=(22,15))
+	plt.subplots_adjust(bottom=None, top=0.95)
 	for column in headers:
-	    index += 1
-	    # test if the column is entirely made of numbers
-	    bNumeric = all_numeric(index)
-	    if not bNumeric or column == 'Index':
-	        continue
-	    for i, lib in enumerate(school):
-	        results[i] = []
+		index += 1
+		# test if the column is entirely made of numbers
+		bNumeric = all_numeric(data, index)
+		if not bNumeric or column == 'Index':
+			continue
+		for i, lib in enumerate(school):
+			results[i] = []
 
-	    for row in data:
-	        for i, lib in enumerate(school):
-	            if row[school_col] == lib and row[index] != '':
-	                results[i].append(float(row[index]))
+		for row in data:
+			for i, lib in enumerate(school):
+				if row[school_col] == lib and row[index] != '':
+					results[i].append(float(row[index]))
 
 		# for each column printing histogram
+		for x in results:
+		   x.sort()
+		cpt += 1
+		ax = plt.subplot(3,5,cpt)
 
-def histogram(csvfile):
+		for i, lib in enumerate(school):
+			# data normalization
+			array_norm = list(map((lambda x: (x - results[i][0]) / (results[i][-1] - results[i][0])), results[i]))
+			plt.hist(array_norm, alpha=0.4, label=lib)
+		plt.title(column, fontsize=12)
+		if params.xkcd:
+			ax.spines['right'].set_color('none')
+			ax.spines['top'].set_color('none')
+		# tagging the answer(s) 2 features are VERY VERY close, impossible to separate without mean calculus
+		if column in ('Arithmancy', 'Care of Magical Creatures'):
+			for i, lib in enumerate(school):
+				print(column, lib, 'mean:', sum(array_norm)/len(results[i]))
+			if column == 'Care of Magical Creatures':
+				ax.set_facecolor('xkcd:mint green')
+		plt.xlabel('grade', fontsize=8)
+		plt.ylabel('students')
+		plt.legend(loc='best')
+	plt.show()
+
+def params(param):
+	#load params according to the command line options
+	params.xkcd = False
+	if param == 1:
+		params.xkcd = True
+	return
+
+def histogram(csvfile, param=0):
+	params(param)
 	headers, data = load_file(csvfile)
-	prepare_data(headers, data)
+	print('QUESTION: Quel cours de Poudlard a une répartition des notes homogènes entre les quatres maisons ?\n')
+	print_histos(headers, data)
 
 def exit_error(string):
 	print(string)
@@ -87,7 +130,19 @@ def exit_error(string):
 
 if __name__ == "__main__":
 	argc = len(sys.argv)
-	if argc not in range(2, 3):
+	if argc not in range(2, 4):
 		print(__doc__)
+	elif argc == 3:
+		#traitement params
+		param = 0
+		if (sys.argv[1][0] == '-' and len(sys.argv[1]) == 2):
+			if sys.argv[1].find('x') > 0:
+				param += 1
+			if param > 0:
+				histogram(sys.argv[-1], param)
+			else:
+				print(__doc__)
+		else:
+			print(__doc__)
 	else:
 		histogram(sys.argv[-1])
