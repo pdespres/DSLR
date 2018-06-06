@@ -2,7 +2,7 @@
 # waloo le encoding: utf-8 de malade
 
 """
-\033[32musage:	python describe.py [-svgf] [dataset]
+\033[32musage:	python describe.py [-b] [dataset]
 
 Supported options:
 	-b 		bonus		bonus fields\033[0m
@@ -10,8 +10,7 @@ Supported options:
 
 #TODO
 #rajouts bonus khi2?
-#rolling mean, variance or standard deviation?
-#correlation?
+#variance?
 
 import sys
 import csv
@@ -125,6 +124,37 @@ def print_results(results, stats):
 		print(line)
 	return
 
+def count_y(data):
+	array = []
+	for row in data:
+		if row[1] != '':
+			array.append(row[1])
+	uniquearray = list(sorted(set(array)))
+	temp = [[x, array.count(x)] for x in set(uniquearray)]
+	temp.sort()
+	print('\nSchool distribution')
+	for school in temp:
+		print(school[0].ljust(13), str(school[1]).rjust(4), '{0:.0f}'.format(school[1]/len(array)*100) + '%')
+
+def print_correlation(csvfile):
+	import pandas as pd
+	import numpy as np
+	import matplotlib.pyplot as plt
+	import seaborn as sns
+	df = pd.read_csv(csvfile)
+	df.drop(['Index','Hogwarts House','First Name','Last Name','Birthday','Best Hand'], axis=1, inplace=True)
+	df = df.replace('', np.nan)
+	df = df.astype('float')
+	corr_matrix = df.corr()
+	fig, ax = plt.subplots(figsize=(15,10))
+	#ax = sns.heatmap(corr_matrix, xticklabels=corr_matrix.columns, yticklabels=corr_matrix.columns)
+	ax = sns.heatmap(corr_matrix, ax=ax, annot=True, xticklabels=corr_matrix.columns, yticklabels=corr_matrix.columns)
+	for item in ax.get_xticklabels():
+	    item.set_rotation(45)
+	for item in ax.get_yticklabels():
+	    item.set_rotation(45)
+	plt.show()
+
 def describe(csvfile, param=0):
 	params(param)
 	stats = ['','Count','Mean','Std','Min','25%','50%','75%','Max']
@@ -133,6 +163,9 @@ def describe(csvfile, param=0):
 	headers, data = load_file(csvfile)
 	results = calculate_stats(headers, data)
 	print_results(results, stats)
+	if params.bonus:
+		count_y(data)
+		print_correlation(csvfile)
 	return
 
 def params(param):
@@ -144,6 +177,7 @@ def params(param):
 
 def exit_error(string):
 	print(string)
+	sys.exit(42)
 	return
 
 if __name__ == "__main__":
