@@ -100,11 +100,17 @@ def print_histos(headers, data):
 			ax.spines['right'].set_color('none')
 			ax.spines['top'].set_color('none')
 		# tagging the answer(s) 2 features are VERY VERY close, impossible to separate without mean calculus
+		meanSum = 0; tempMean = 0
 		if column in ('Arithmancy', 'Care of Magical Creatures'):
 			for i, lib in enumerate(school):
-				print(column, lib, 'mean:', sum(array_norm)/len(results[i]))
+				meanSum += sum(array_norm)/len(results[i])
+				print(column, lib, 'mean:', '{0:.2f}'.format(sum(array_norm)/len(results[i]))
+			print(column, 'Global', 'mean:', '{0:.2f}'.format(meanSum/4))
+			sum(list(map((lambda x: (x - mean) ** 2), array))) / (count - 1)
+			print(column, 'Global', 'variance:', '{0:.2f}'.format(meanSum/4))
 			if column == 'Care of Magical Creatures':
 				ax.set_facecolor('xkcd:mint green')
+			mean = 0; gMean = 0
 		plt.xlabel('grade', fontsize=8)
 		plt.ylabel('students')
 		plt.legend(loc='best')
