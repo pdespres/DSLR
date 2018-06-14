@@ -2,7 +2,7 @@
 # waloo le encoding: utf-8 de malade
 
 """
-\033[32musage:	python scatter.py [-x] [dataset]
+\033[32musage:	python scatter_plot.py [-x] [dataset]
 
 Supported options:
 	-x 		xkcd		xkcd style\033[0m
@@ -54,11 +54,14 @@ def params(param):
 		params.xkcd = True
 	return
 
+def print_splots(headers, data):
+
+		
 def scatter(csvfile, param=0):
 	params(param)
 	headers, data = load_file(csvfile)
-	print('QUESTION: Quelles sont les deux features qui sont semblables ?\n')
-	print_histos(headers, data)
+	print('\nQUESTION: Quelles sont les deux features qui sont semblables ?\n')
+	print_splots(headers, data)
 
 def exit_error(string):
 	print(string)

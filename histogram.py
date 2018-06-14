@@ -99,21 +99,23 @@ def print_histos(headers, data):
 		if params.xkcd:
 			ax.spines['right'].set_color('none')
 			ax.spines['top'].set_color('none')
-		# tagging the answer(s) 2 features are VERY VERY close, impossible to separate without mean calculus
-		meanSum = 0; tempMean = 0
+		# tagging the answer(s) 2 features are VERY VERY close, impossible to separate without mean calculus & variance
+		meanSum = 0; gMean = 0; sumVar = 0
 		if column in ('Arithmancy', 'Care of Magical Creatures'):
 			for i, lib in enumerate(school):
 				meanSum += sum(array_norm)/len(results[i])
-				print(column, lib, 'mean:', '{0:.2f}'.format(sum(array_norm)/len(results[i]))
-			print(column, 'Global', 'mean:', '{0:.2f}'.format(meanSum/4))
-			sum(list(map((lambda x: (x - mean) ** 2), array))) / (count - 1)
-			print(column, 'Global', 'variance:', '{0:.2f}'.format(meanSum/4))
-			if column == 'Care of Magical Creatures':
+				print(column, lib, 'mean:', '{0:.2f}'.format(sum(array_norm)/len(results[i])))
+			gMean = meanSum/4
+			print(column, 'Global', 'mean:', '{0:.2f}'.format(gMean))
+			for i, lib in enumerate(school):
+				sumVar += (sum(array_norm)/len(results[i]) - gMean) ** 2
+			print(column, 'Global', 'Std:', '{0:.3f}'.format((sumVar/4)**0.5) + '\n')
+			if column == 'Arithmancy':
 				ax.set_facecolor('xkcd:mint green')
-			mean = 0; gMean = 0
 		plt.xlabel('grade', fontsize=8)
 		plt.ylabel('students')
 		plt.legend(loc='best')
+		plt.suptitle('Quel cours de Poudlard a une répartition des notes homogènes entre les quatres maisons ?', size = 12)
 	plt.show()
 
 def params(param):
@@ -126,7 +128,6 @@ def params(param):
 def histogram(csvfile, param=0):
 	params(param)
 	headers, data = load_file(csvfile)
-	print('QUESTION: Quel cours de Poudlard a une répartition des notes homogènes entre les quatres maisons ?\n')
 	print_histos(headers, data)
 
 def exit_error(string):
