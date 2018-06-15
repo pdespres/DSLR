@@ -18,8 +18,6 @@ import pandas as pd
 import seaborn as sns
 from PIL import Image
 
-csvfile = './data/dataset_train.csv'
-
 def load_file(csvfile):
 	#open file > drop Nan rows > drop non-interesting colums > change date and categorical to numeric 
 	if not os.path.isfile(csvfile):

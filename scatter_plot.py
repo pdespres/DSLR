@@ -14,8 +14,7 @@ import sys
 import csv
 import os.path
 import matplotlib.pyplot as plt
-
-csvfile = './data/dataset_train.csv'
+from datetime import datetime
 
 def load_file(csvfile):
 	#open file / create headers(column name) and data arrays
@@ -60,7 +59,7 @@ def prep_data(headers, data):
 	# test if the column is entirely made of numbers
 	for index, column in enumerate(headers):
 		bNumeric = all_numeric(data, index)
-		if not bNumeric or column == 'Index':
+		if column not in ('Best Hand', 'Birthday') and (not bNumeric or column == 'Index'):
 			continue
 		featuresToKeep.append(index)
 		features.append([])
@@ -75,38 +74,58 @@ def prep_data(headers, data):
 			continue
 		# Create an array for the data of each feature
 		for index, numCol in enumerate(featuresToKeep):
-			features[index].append(float(row[numCol]))
+			if headers[numCol] == 'Best Hand':
+				if row[numCol] == 'Left':
+					features[index].append(0)
+				else:
+					features[index].append(1)
+			elif headers[numCol] == 'Birthday':
+				t = datetime.strptime(row[numCol], '%Y-%m-%d')
+				features[index].append(t.toordinal())
+			else:
+				features[index].append(float(row[numCol]))
 	return featuresToKeep, features
 
 def pearson_score(X, Y):
-    xmean = sum(X) / len(X)
-    ymean = sum(Y) / len(Y)
-    xsub = [i - xmean for i in X]
-    ysub = [i - ymean for i in Y]
-    xsub_times_ysub = [a * b for a, b in list(zip(xsub, ysub))]
-    etx = (sum(list(map((lambda x: (x - xmean) ** 2), X))) / (len(X) - 1)) ** 0.5
-    ety = (sum(list(map((lambda x: (x - ymean) ** 2), Y))) / (len(Y) - 1)) ** 0.5
-    return (sum(xsub_times_ysub) / len(xsub_times_ysub) / (etx * ety))
+	xmean = sum(X) / len(X)
+	ymean = sum(Y) / len(Y)
+	xsub = [i - xmean for i in X]
+	ysub = [i - ymean for i in Y]
+	xsub_times_ysub = [a * b for a, b in list(zip(xsub, ysub))]
+	etx = (sum(list(map((lambda x: (x - xmean) ** 2), X))) / (len(X) - 1)) ** 0.5
+	ety = (sum(list(map((lambda x: (x - ymean) ** 2), Y))) / (len(Y) - 1)) ** 0.5
+	return (sum(xsub_times_ysub) / len(xsub_times_ysub) / (etx * ety))
 
 def find_highest_correlation(headers, data):
 	featuresToKeep, features = prep_data(headers, data)
 	pmax = 0
 	for i, column1 in enumerate(featuresToKeep):
-	    for j, column2 in enumerate(featuresToKeep):
-	        if i >= j:
-	            continue
-	        coefCorr = pearson_score(features[i], features[j])
-	        print(abs(coefCorr))
-	        if abs(coefCorr) > pmax:
-	            pmax = abs(coefCorr)
-	            result = (i,j)
-	return result, pmax
-	            
+		for j, column2 in enumerate(featuresToKeep):
+			if i >= j:
+				continue
+			coefCorr = pearson_score(features[i], features[j])
+			print('%s and %s => ' % (headers[featuresToKeep[i]],headers[featuresToKeep[j]]), \
+		'Pearson score:', '{0:.2f}'.format(abs(coefCorr)))
+			if abs(coefCorr) > pmax:
+				pmax = abs(coefCorr)
+				result = (i,j)
+	print('\nMost correlated features are %s and %s' % (headers[featuresToKeep[result[0]]],headers[featuresToKeep[result[1]]]), \
+		'Pearson score:', '{0:.2f}'.format(pmax), '\n')
+	return features[i], features[j], (headers[featuresToKeep[result[0]]],headers[featuresToKeep[result[1]]])
+				
 def scatter(csvfile, param=0):
 	params(param)
 	headers, data = load_file(csvfile)
 	print('\nQUESTION: Quelles sont les deux features qui sont semblables ?\n')
-	highest, pmax = find_highest_correlation(headers, data)
+	x, y, titles = find_highest_correlation(headers, data)
+	if params.xkcd:
+		plt.xkcd()
+	plt.scatter(x, y)
+	plt.xlabel(titles[0])
+	plt.ylabel(titles[1])
+	plt.legend(loc='best')
+	plt.suptitle('Quelles sont les deux features qui sont semblables ?', size = 12)
+	plt.show()
 
 def exit_error(string):
 	print(string)

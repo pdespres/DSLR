@@ -9,7 +9,7 @@ Supported options:
 """
 
 #TODO
-#rajouts bonus khi2?
+#rajouts bonus khi2? NaN!
 #variance?
 
 import sys
@@ -51,6 +51,7 @@ def calculate_stats(headers, data):
 	results = []
 	for column in headers:
 		index += 1
+		nanCount = 0
 
 		# test if the column is entirely made of numbers
 		bNumeric = all_numeric(data, index)
@@ -68,6 +69,8 @@ def calculate_stats(headers, data):
 				else:
 					value = row[index]
 				array.append(value)
+			else:
+				nanCount += 1
 		count = len(array)
 		if count == 0:
 			continue
@@ -88,6 +91,7 @@ def calculate_stats(headers, data):
 			result['75%'] = array[max(int(count * 0.75) - 1, 0)]
 			result['Max'] = array[count - 1]
 			#bonus
+			result['NaN'] = nanCount
 			#bonus
 		else:
 			#bonus
@@ -98,6 +102,7 @@ def calculate_stats(headers, data):
 			tempmax = temp[len(temp) - 1]
 			result['Top'] = tempmax[1]
 			result['Freq'] = tempmax[0]
+			result['NaN'] = nanCount
 			#bonus
 
 		results.append(result)
@@ -113,7 +118,7 @@ def print_results(results, stats):
 			if y in x.keys():
 				input = x[y]
 				if is_number(input):
-					if y in ('Count','Unique','Freq'):
+					if y in ('Count','NaN','Unique','Freq'):
 						line += '{0:.0f}'.format(x[y]).rjust(padding)
 					else:
 						line += '{0:.6f}'.format(x[y]).rjust(padding)
@@ -150,16 +155,17 @@ def print_correlation(csvfile):
 	#ax = sns.heatmap(corr_matrix, xticklabels=corr_matrix.columns, yticklabels=corr_matrix.columns)
 	ax = sns.heatmap(corr_matrix, ax=ax, annot=True, xticklabels=corr_matrix.columns, yticklabels=corr_matrix.columns)
 	for item in ax.get_xticklabels():
-	    item.set_rotation(45)
+		item.set_rotation(45)
 	for item in ax.get_yticklabels():
-	    item.set_rotation(45)
+		item.set_rotation(45)
+	plt.suptitle('Correlation matrix', size = 12)
 	plt.show()
 
 def describe(csvfile, param=0):
 	params(param)
 	stats = ['','Count','Mean','Std','Min','25%','50%','75%','Max']
 	if params.bonus:
-		stats = ['','Count','Unique','Top','Freq','Mean','Std','Min','25%','50%','75%','Max']
+		stats = ['','Count','NaN','Unique','Top','Freq','Mean','Std','Min','25%','50%','75%','Max']
 	headers, data = load_file(csvfile)
 	results = calculate_stats(headers, data)
 	print_results(results, stats)
