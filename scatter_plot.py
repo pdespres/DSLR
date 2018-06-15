@@ -54,14 +54,59 @@ def params(param):
 		params.xkcd = True
 	return
 
-def print_splots(headers, data):
+def prep_data(headers, data):
+	featuresToKeep = []
+	features = []
+	# test if the column is entirely made of numbers
+	for index, column in enumerate(headers):
+		bNumeric = all_numeric(data, index)
+		if not bNumeric or column == 'Index':
+			continue
+		featuresToKeep.append(index)
+		features.append([])
 
-		
+	for row in data:
+		# Don't keep the empty results
+		bNaN = False
+		for index, numCol in enumerate(featuresToKeep):
+			if row[numCol] == '':
+				bNaN = True
+		if bNaN:
+			continue
+		# Create an array for the data of each feature
+		for index, numCol in enumerate(featuresToKeep):
+			features[index].append(float(row[numCol]))
+	return featuresToKeep, features
+
+def pearson_score(X, Y):
+    xmean = sum(X) / len(X)
+    ymean = sum(Y) / len(Y)
+    xsub = [i - xmean for i in X]
+    ysub = [i - ymean for i in Y]
+    xsub_times_ysub = [a * b for a, b in list(zip(xsub, ysub))]
+    etx = (sum(list(map((lambda x: (x - xmean) ** 2), X))) / (len(X) - 1)) ** 0.5
+    ety = (sum(list(map((lambda x: (x - ymean) ** 2), Y))) / (len(Y) - 1)) ** 0.5
+    return (sum(xsub_times_ysub) / len(xsub_times_ysub) / (etx * ety))
+
+def find_highest_correlation(headers, data):
+	featuresToKeep, features = prep_data(headers, data)
+	pmax = 0
+	for i, column1 in enumerate(featuresToKeep):
+	    for j, column2 in enumerate(featuresToKeep):
+	        if i >= j:
+	            continue
+	        coefCorr = pearson_score(features[i], features[j])
+	        print(abs(coefCorr))
+	        if abs(coefCorr) > pmax:
+	            pmax = abs(coefCorr)
+	            result = (i,j)
+	return result, pmax
+	            
 def scatter(csvfile, param=0):
 	params(param)
 	headers, data = load_file(csvfile)
 	print('\nQUESTION: Quelles sont les deux features qui sont semblables ?\n')
-	print_splots(headers, data)
+	highest, pmax = find_highest_correlation(headers, data)
 
 def exit_error(string):
 	print(string)

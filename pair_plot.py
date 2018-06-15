@@ -21,15 +21,18 @@ from PIL import Image
 csvfile = './data/dataset_train.csv'
 
 def load_file(csvfile):
-	#open file > drop Nan rows > drop non-interesting colums
+	#open file > drop Nan rows > drop non-interesting colums > change date and categorical to numeric 
 	if not os.path.isfile(csvfile):
 		exit_error('can\'t find the file ' + csvfile)
 	data = pd.read_csv(csvfile)
 	if data.shape[0] < 1:
 		exit_error('file ' + csvfile + ' is empty')
 	data.dropna(inplace=True)
-	df = data.drop(['Index','Hogwarts House','First Name','Last Name','Birthday','Best Hand'], axis=1)
-	df_norm = (df - df.mean()) / (df.max() - df.min())
+	df = data.drop(['Index','Hogwarts House','First Name','Last Name'], axis=1)
+	df['Birthday'] = pd.to_datetime(df['Birthday'], format='%Y-%m-%d')
+	df['Birthday'] = pd.to_numeric(df.Birthday)
+	df['Best Hand'] = pd.Categorical(df['Best Hand']).codes
+	df_norm = (df - df.min()) / (df.max() - df.min())
 	df_norm['Hogwarts House'] = data['Hogwarts House']
 	return df_norm
 
@@ -58,12 +61,13 @@ def print_pair(data):
 	if params.xkcd:
 		plt.xkcd()
 		sns.despine()
-	pairPlot = sns.pairplot(data, hue='Hogwarts House', diag_kind='kde', \
+	# pairPlot = sns.pairplot(data, hue='Hogwarts House', diag_kind='kde', \
+	pairPlot = sns.pairplot(data, hue='Hogwarts House', \
 		plot_kws = {'alpha': 0.6, 's': 80, 'edgecolor': 'k'})
 	pairPlot.fig.suptitle('À partir de cette visualisation, quelles caractéristiques allez-vous utiliser pour entraîner votre prochaine régression logistique ?', fontsize=30)
 	pairPlot.fig.subplots_adjust(top=.95)
 	pairPlot.fig.subplots_adjust(right=.95)
-	# graph is too big for esay use under plt. So save as png and open it as img file
+	# graph is too big for easy use under plt. So save as png and open it as img file
 	pairPlot.savefig("./data/pair_plot.png")
 	img = Image.open("./data/pair_plot.png")
 	img.show()
