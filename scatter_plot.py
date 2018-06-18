@@ -116,7 +116,6 @@ def find_highest_correlation(headers, data):
 def scatter(csvfile, param=0):
 	params(param)
 	headers, data = load_file(csvfile)
-	print('\nQUESTION: Quelles sont les deux features qui sont semblables ?\n')
 	x, y, titles = find_highest_correlation(headers, data)
 	if params.xkcd:
 		plt.xkcd()
