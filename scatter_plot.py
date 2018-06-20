@@ -2,13 +2,11 @@
 # waloo le encoding: utf-8 de malade
 
 """
-\033[32musage:	python scatter_plot.py [-x] [dataset]
+\033[32musage:	python scatter_plot.py [-x] dataset_file
 
 Supported options:
 	-x 		xkcd		xkcd style\033[0m
 """
-
-#TODO
 
 import sys
 import csv

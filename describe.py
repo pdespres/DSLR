@@ -10,7 +10,6 @@ Supported options:
 
 #TODO
 #rajouts bonus khi2? NaN!
-#variance?
 
 import sys
 import csv

@@ -2,13 +2,15 @@
 # waloo le encoding: utf-8 de malade
 
 """
-\033[32musage:	python logreg_train.py [-v] [dataset]
+\033[32musage:	python logreg_train.py [-vs] dataset_file.npy
 
 Supported options:
 	-v 		verbose		print epochs\033[0m
+	-s 		stochastic	optimization with stochastic gradient descent
+	-a 		adam		optimization with adam method
 """
 
-# implement stochastic GD + adam?
+# implement SGD + adam?
 
 import sys
 import csv
@@ -34,8 +36,14 @@ def load_file(csvfile):
 def params(param):
 	#load params according to the command line options
 	params.verbose = False
-	if param == 1:
+	params.stochastic = False
+	params.adam = False
+	if param in (1,3,5):
 		params.verbose = True
+	if param in (2,3):
+		params.stochastic = True
+	if param in (4,5):
+		params.adam = True
 	return
 
 def is_number(value):
@@ -107,7 +115,7 @@ def prep_data(headers, data):
 	# save for easy retrieval in predict.py
 	np.save('./data/medians.npy', medians)
 
-	# Create a marix for the data
+	# Create a matrix for the data
 	for index, numCol in enumerate(featuresToKeep):
 		for row in data:
 			features[index].append(float(row[numCol]))
@@ -140,17 +148,105 @@ def f(i, school):
 	else:
 		return 0
 
+#bonus stochastic_gradient_descent => adjustement of theta at each row
+def stochastic_gradient_descent(train, y, theta, school):
+	# params to modify
+	learning_rate = 0.05
+	iterations = 200
+
+	cpt = 0
+	while cpt < iterations:
+		
+		# shuffling
+		p = np.random.permutation(len(train))
+		train = train[p]
+		y = y[p]
+
+		for i in range(train.shape[0]):
+			temp = np.dot(train[i], theta)
+			yhat = sigmoid(temp)
+			cost = -(y[i] * np.log(yhat) + (1 - y[i]) * np.log(1 - yhat))
+			gradient = np.dot((yhat - y[i]), train[i])
+			theta -= gradient * learning_rate
+		if params.verbose and cpt % 20 == 0:
+			temp = np.dot(train, theta)
+			yhat = sigmoid(temp)
+			cost = loss(yhat, y)
+			print(school, cpt, cost)
+		cpt += 1
+	return theta
+
+#bonus adam => adjustement of theta AND separate learning rate (with momentum) at each row
+def adam(train, y, theta, school):
+	# params to modify
+	learning_rate = 0.001
+	epsilon = 0.00000001
+	beta1 = 0.9
+	beta2 = 0.999
+	iterations = 200
+
+	cpt = 0
+	M = np.zeros(train.shape[1])
+	R = np.zeros(train.shape[1])
+	while cpt < iterations:
+
+		# shuffling
+		p = np.random.permutation(len(train))
+		train = train[p]
+		y = y[p]
+
+		for i in range(train.shape[0]):
+			temp = np.dot(train[i], theta)
+			yhat = sigmoid(temp)
+			cost = -(y[i] * np.log(yhat) + (1 - y[i]) * np.log(1 - yhat))
+			gradient = np.dot((yhat - y[i]), train[i])
+
+			for k,_ in enumerate(gradient):
+				M[k] = beta1 * M[k] + (1. - beta1) * gradient[k]
+				R[k] = beta2 * R[k] + (1. - beta2) * gradient[k]**2
+
+				m_k_hat = M[k] / (1. - beta1**(i+1))
+				r_k_hat = R[k] / (1. - beta2**(i+1))
+
+				theta[k] -= learning_rate / (np.sqrt(r_k_hat) + epsilon) * m_k_hat
+
+		if params.verbose and cpt % 20 == 0:
+			temp = np.dot(train, theta)
+			yhat = sigmoid(temp)
+			cost = loss(yhat, y)
+			print(school, cpt, cost)
+		cpt += 1
+	return theta
+
+def gradient_descent(train, y, theta, school):
+	# params to modify
+	learning_rate = 0.1
+	param_stop = 0.000001
+
+	cost = 1
+	for i in range(100000):
+		temp = np.dot(train, theta)
+		yhat = sigmoid(temp)
+		prev_cost = cost
+		cost = loss(yhat, y)
+		if params.verbose and i % 500 == 0:
+			print(school, i, cost)
+		if prev_cost - cost < param_stop:
+			if params.verbose:
+				print(school, i, cost)
+			break
+		gradient = np.dot((yhat - y), train) / y.shape[0]
+		theta -= gradient * learning_rate
+	return theta
+
 def train_lr(csvfile, param=0):
 	params(param)
 	headers, data = load_file(csvfile)
 	features, yraw = prep_data(headers, data)
 	schools = get_schools(data, headers)
 
-	# params to modify
-	learning_rate = 0.1
-	param_stop = 0.000001
-
-	# init. Using from now numpy lib to ease coding. checked with ademenet (only basic numpy functions)
+	# Using from now numpy lib to ease coding. checked with ademenet (only basic numpy functions)
+	# one vs all => 1 logistic regression for each school
 	weights = []
 	train = np.array(features).T
 	# add intercept
@@ -159,28 +255,24 @@ def train_lr(csvfile, param=0):
 		y = np.array([f(i, school) for i in yraw])
 		theta = np.zeros(train.shape[1])
 
-		# regression per se.
-		cost = 1
-		for i in range(100000):
-			temp = np.dot(train, theta)
-			yhat = sigmoid(temp)
-			prev_cost = cost
-			cost = loss(yhat, y)
-			if params.verbose and i % 500 == 0:
-				print(school, i, cost)
-			if prev_cost - cost < param_stop:
-				if params.verbose:
-					print(school, i, cost)
-				break
-			gradient = np.dot((yhat - y), train) / y.shape[0]
-			theta -= gradient * learning_rate
+		# different optimizations
+		if params.stochastic == True:
+			name = 'stochastic gradient descent'
+			theta = stochastic_gradient_descent(train, y, theta, school)
+		elif params.adam == True:
+			name = 'adam'
+			theta = adam(train, y, theta, school)
+		else:
+			name = 'gradient descent'
+			theta = gradient_descent(train, y, theta, school)
+
 		if params.verbose:
 			print(school, theta)
 		weights.append(theta)
 
 	# save weights
 	np.save('./data/weights.npy', weights)
-	print('Training is done!')
+	print('Training with %s is done!' % (name))
 
 
 def exit_error(string):
@@ -195,10 +287,14 @@ if __name__ == "__main__":
 	elif argc == 3:
 		#traitement params
 		param = 0
-		if (sys.argv[1][0] == '-' and len(sys.argv[1]) == 2):
+		if (sys.argv[1][0] == '-' and len(sys.argv[1]) in range(2,4)):
 			if sys.argv[1].find('v') > 0:
 				param += 1
-			if param > 0:
+			if sys.argv[1].find('s') > 0:
+				param += 2
+			if sys.argv[1].find('a') > 0:
+				param += 4
+			if param > 0 and param < 6:
 				train_lr(sys.argv[-1], param)
 			else:
 				print(__doc__)

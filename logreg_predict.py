@@ -2,7 +2,7 @@
 # waloo le encoding: utf-8 de malade
 
 """
-\033[32musage:	python logreg_train.py [-v] [dataset]
+\033[32musage:	python logreg_train.py [-v] dataset_file [weights_files]
 
 Supported options:
 	-v 		verbose		print epochs\033[0m
@@ -15,10 +15,12 @@ import csv
 import os.path
 import numpy as np
 
-def load_file(csvfile):
+def load_file(csvfile, weightfile):
 	#open file / create headers(column name) and data arrays
 	if not os.path.isfile(csvfile):
 		exit_error('can\'t find the file ' + csvfile)
+	if not os.path.isfile(weightfile):
+		exit_error('can\'t find the file ' + weightfile)
 	data = []
 	with open(csvfile) as csv_iterator:
 		data_reader = csv.reader(csv_iterator, delimiter=',')
@@ -78,12 +80,13 @@ def prep_data(headers, data, medians):
 	
 	return  features
 
-def predict_lr(csvfile, param=0):
+def predict_lr(csvfile, weightfile, param=0):
 	params(param)
-	headers, data = load_file(csvfile)
+	headers, data = load_file(csvfile, weightfile)
 	medians = np.load('./data/medians.npy')
 	schools = np.load('./data/schools.npy')
-	weights = np.load('./data/weights.npy')
+	#weights = np.load('./data/weights.npy')
+	weights = np.load(weightfile)
 	probas = []
 	features = prep_data(headers, data, medians)
 	test = np.array(features).T
@@ -117,19 +120,17 @@ def exit_error(string):
 
 if __name__ == "__main__":
 	argc = len(sys.argv)
-	if argc not in range(2, 4):
+	if argc not in range(2, 5):
 		print(__doc__)
-	elif argc == 3:
-		#traitement params
-		param = 0
-		if (sys.argv[1][0] == '-' and len(sys.argv[1]) == 2):
-			if sys.argv[1].find('v') > 0:
-				param += 1
-			if param > 0:
-				predict_lr(sys.argv[-1], param)
-			else:
-				print(__doc__)
+	#traitement params
+	param = 0 ; paramExists = False
+	if (sys.argv[1][0] == '-' and len(sys.argv[1]) == 2):
+		if sys.argv[1].find('v') > 0:
+			param += 1
 		else:
 			print(__doc__)
-	else:
-		predict_lr(sys.argv[-1])
+	#weightfile optional
+	weightfile = './data/weights.npy'
+	if argc - param == 3:
+		weightfile = sys.argv[-1]
+	predict_lr(sys.argv[1 - argc + param], weightfile, param)
