@@ -5,9 +5,9 @@
 \033[32musage:	python logreg_train.py [-vs] dataset_file.npy
 
 Supported options:
-	-v 		verbose		print epochs\033[0m
+	-v 		verbose		print epochs
 	-s 		stochastic	optimization with stochastic gradient descent
-	-a 		adam		optimization with adam method
+	-a 		adam		optimization with adam method\033[0m
 """
 
 # implement SGD + adam?
@@ -152,7 +152,7 @@ def f(i, school):
 def stochastic_gradient_descent(train, y, theta, school):
 	# params to modify
 	learning_rate = 0.05
-	iterations = 200
+	iterations = 101
 
 	cpt = 0
 	while cpt < iterations:
@@ -183,7 +183,7 @@ def adam(train, y, theta, school):
 	epsilon = 0.00000001
 	beta1 = 0.9
 	beta2 = 0.999
-	iterations = 200
+	iterations = 100
 
 	cpt = 0
 	M = np.zeros(train.shape[1])
@@ -287,14 +287,18 @@ if __name__ == "__main__":
 	elif argc == 3:
 		#traitement params
 		param = 0
+		count = 0
 		if (sys.argv[1][0] == '-' and len(sys.argv[1]) in range(2,4)):
 			if sys.argv[1].find('v') > 0:
 				param += 1
+				count += 1
 			if sys.argv[1].find('s') > 0:
 				param += 2
+				count += 1
 			if sys.argv[1].find('a') > 0:
 				param += 4
-			if param > 0 and param < 6:
+				count += 1
+			if param > 0 and param < 6 and (count + 1) == len(sys.argv[1]):
 				train_lr(sys.argv[-1], param)
 			else:
 				print(__doc__)
